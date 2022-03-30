@@ -13,7 +13,7 @@ library(mltools)
 
 #----- prepare the dataset---------------------
 # set the working dictionary
-setwd("D:/OneDrive - UW-Madison/Paper review/SRKN/Revision_Data")
+setwd("D:/")
 # read the SNP dataset
 data.dummy <- read.delim("genotype_numerical.txt")
 # read the dependent dataset 
@@ -41,7 +41,7 @@ for (i in 1:nrow(data.plsr)) {
 }
 
 #---------- PLSR for variable importance ---------
-
+data.plsr = data.plsr[,-1]
 set.seed(1)
 pls.fit = plsr(score~.,data = data.plsr,scale = FALSE,validation = "CV")
 #summary(pls.fit)
@@ -52,7 +52,7 @@ vip <- VIP(pls.fit, comp) %>% data.frame()# variable importance in projection
 vipname = row.names(vip)
 vip = vip[grepl('Gm',vipname),]
 vipname = vipname[grepl('Gm',vipname)]
-vip = cbind.data.frame(vipname,vip)
+vip = cbind.data.frame('SNP' = vipname,'vip' = vip)
 plot(vip)
 write.csv(vip, file = "PLSRVIP.csv")
 
@@ -273,7 +273,7 @@ max.var = NULL  # can put a preference here, for example, max.var = 'Gm10_123220
 # Specific a classification function here. It could be 'SVM', 'ANN', or 'RF'. 
 # Note: when choose RF, it's better to specify a preference by, e.g., max.var = 'Gm10_1232205_A_G'. just to help RG model converge. Because there is a bug when RF took single SNPs as predictors. 
 cla.function = 'SVM'
-max.var = 'Gm10_1232205_A_G'
+# max.var = 'Gm10_1232205_A_G'
 
 # start selection from the variables with high VIP
 Variables = read_csv('VIP_removeCorrelated.csv') %>% as.data.frame()
@@ -289,16 +289,16 @@ summary(data.dummy.select$class3)
 # stop criteria: acc.gain > acc.gain.tolerance
 resultTable = NULL
 while (num.SNP<=29){
-  #cv.round = roundTrain(variableNames,max.var,data.dummy.select,s,cla.function)
-  #master.list = append(master.list,list(cv.round))
-  #names(master.list)[num.SNP] = paste('Round',num.SNP,sep = "_")
+  cv.round = roundTrain(variableNames,max.var,data.dummy.select,s,cla.function)
+  master.list = append(master.list,list(cv.round))
+  names(master.list)[num.SNP] = paste('Round',num.SNP,sep = "_")
   cv.round = master.list[[paste('Round',num.SNP,sep = "_")]]
   max.ind = which.max(cv.round)
   max.var = row.names(cv.round)[max.ind]
   num.SNP = num.SNP+1
-  # acc.gain = max(cv.round) - max.acc
-  # max.acc = max(cv.round)
-  # remove(cv.round)
+  acc.gain = max(cv.round) - max.acc
+  max.acc = max(cv.round)
+  remove(cv.round)
   # return the classification matrices
   fmla = as.formula(paste("class3 ~ ", max.var))
   cv.pred = classification.accuracy(data.dummy.select,fmla,s,cla.function)
